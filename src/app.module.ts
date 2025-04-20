@@ -3,6 +3,8 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import { AccountController } from './account/account.controller';
+import { AccountService } from './account/account.service';
 
 @Module({
   imports: [
@@ -13,7 +15,11 @@ import * as winston from 'winston';
             winston.format.timestamp(),
             winston.format.colorize(),
             winston.format.printf(({ timestamp, level, message }) => {
-              return `${String(timestamp)} [${level}]: ${String(message)}`;
+              let formattedMessage = message;
+              if (typeof message === 'object') {
+                formattedMessage = JSON.stringify(message, null, 2);
+              }
+              return `${String(timestamp)} [${level}]: ${String(formattedMessage)}`;
             }),
           ),
         }),
@@ -27,7 +33,7 @@ import * as winston from 'winston';
       ],
     }),
   ],
-  controllers: [],
-  providers: [AppService, PrismaService],
+  controllers: [AccountController],
+  providers: [AppService, PrismaService, AccountService],
 })
 export class AppModule {}

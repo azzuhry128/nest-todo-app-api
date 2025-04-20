@@ -1,4 +1,10 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AccountResponse,
   LoginAccountRequest,
@@ -9,9 +15,14 @@ import { PrismaService } from 'src/prisma.service';
 import { Account } from '@prisma/client';
 import { CreateAccountSchema, LoginAccountSchema } from './account.validation';
 import * as bcrypt from 'bcrypt';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 @Injectable()
 export class AccountService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
+  ) {}
 
   async GetAccountByUsername(
     request: LoginAccountRequest,
@@ -46,7 +57,8 @@ export class AccountService {
   async CreateAccount(
     request: RegisterAccountRequest,
   ): Promise<AccountResponse> {
-    const { username } = CreateAccountSchema.parse(request);
+    const { username } = request;
+
     const duplicateUsername = await this.prisma.account.findUnique({
       where: {
         username,
@@ -54,9 +66,19 @@ export class AccountService {
     });
 
     if (duplicateUsername) {
-      throw new NotFoundException(
+      this.logger.error(
         `Account with username ${username} already exists`,
+        duplicateUsername,
       );
+      throw new BadRequestException({
+        message: `Account with username ${username} already exists`,
+        errors: [
+          {
+            field: 'username',
+            message: 'This username is already in use',
+          },
+        ],
+      });
     }
 
     const hashedPassword = await bcrypt.hash(request.password, 10);

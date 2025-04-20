@@ -14,13 +14,11 @@ export const CreateAccountSchema = AccountSchema.omit({
   account_id: true,
   createdAt: true,
   updatedAt: true,
-}).extend({
-  title: z.string().min(1, { message: 'Title is required' }),
 });
 
-export const LoginAccountSchema = z.object({
-  email_address: z.string().min(1).max(64),
-  password: z.string().min(1).max(64),
+export const LoginAccountSchema = AccountSchema.pick({
+  email_address: true,
+  password: true,
 });
 
 export const UpdateAccountSchema = AccountSchema.pick({
@@ -31,6 +29,6 @@ export const UpdateAccountSchema = AccountSchema.pick({
   phone_number: z.string().optional(),
 });
 
-export const DeleteAccountSchema = z.object({
-  account_id: z.number().min(1).positive(),
+export const DeleteAccountSchema = AccountSchema.pick({
+  account_id: true,
 });

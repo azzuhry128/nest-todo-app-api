@@ -11,10 +11,9 @@ export class TestService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  async deleteAll() {
-    await this.deleteTodo();
+  async purgeAccount() {
+    this.logger.info('Purging previous account data');
     await this.deleteAccount();
-    this.logger.info('Purging previous data');
   }
 
   async createAccount() {
@@ -23,7 +22,7 @@ export class TestService {
       data: {
         username: 'test',
         email_address: 'test@gmail.com',
-        phone_number: 'test',
+        phone_number: 'test123',
         password: await bcrypt.hash('test', 10),
       },
     });
@@ -31,29 +30,22 @@ export class TestService {
 
   async deleteAccount() {
     this.logger.info('Deleting test account');
+    const targetAccount = await this.prismaService.account.findFirst({
+      where: {
+        username: 'test',
+      },
+    });
+
+    if (!targetAccount) {
+      this.logger.info('No test account found to delete');
+      return;
+    }
+
     await this.prismaService.account.delete({
       where: {
-        username: 'test username',
+        account_id: targetAccount.account_id,
       },
     });
-  }
-
-  async createTodo() {
-    this.logger.info('Creating test todo');
-    await this.prismaService.todo.create({
-      data: {
-        title: 'test todo',
-        description: 'test todo description',
-      },
-    });
-  }
-
-  async deleteTodo() {
-    this.logger.info('Deleting test todo');
-    await this.prismaService.todo.delete({
-      where: {
-        todo_owner: 'test username',
-      },
-    });
+    this.logger.info('Test account deleted successfully');
   }
 }
