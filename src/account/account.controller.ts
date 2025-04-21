@@ -4,6 +4,9 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -15,8 +18,7 @@ import {
   UpdateAccountRequest,
 } from 'src/model/account.model';
 import { WebResponse } from 'src/model/web.model';
-import { Account } from '@prisma/client';
-import { CreateAccountSchema } from './account.validation';
+import { CreateAccountSchema, UpdateAccountSchema } from './account.validation';
 import { ZodError } from 'zod';
 
 @Controller('/api/accounts')
@@ -70,21 +72,64 @@ export class AccountController {
   async login(
     @Body() request: LoginAccountRequest,
   ): Promise<WebResponse<AccountResponse>> {
-    const result = await this.accountService.GetAccountByUsername(request);
-    return {
-      data: result,
-    };
+    try {
+      const result = await this.accountService.GetAccountByUsername(request);
+      return {
+        data: result,
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationErrors = error.errors.map((err) => ({
+          path: err.path.join('.'),
+          message: err.message,
+        }));
+
+        throw new BadRequestException({
+          message: 'All fields are required',
+          errors: validationErrors,
+        });
+      }
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new BadRequestException('validation is not successful');
+    }
   }
 
-  @Patch('update')
+  @Patch('update/:account_id')
   @HttpCode(200)
   async update(
-    account: Account,
+    @Param('account_id', ParseUUIDPipe) account_id: string,
     @Body() request: UpdateAccountRequest,
   ): Promise<WebResponse<AccountResponse>> {
-    const result = await this.accountService.UpdateAccount(account, request);
-    return {
-      data: result,
-    };
+    try {
+      const result = await this.accountService.UpdateAccount(
+        account_id,
+        UpdateAccountSchema.parse(request),
+      );
+      return {
+        data: result,
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationErrors = error.errors.map((err) => ({
+          path: err.path.join('.'),
+          message: err.message,
+        }));
+
+        throw new BadRequestException({
+          message: 'All fields are required',
+          errors: validationErrors,
+        });
+      }
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new BadRequestException('validation failed');
+    }
   }
 }

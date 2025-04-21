@@ -11,11 +11,10 @@ export class LoginAccountRequest {
 }
 
 export class UpdateAccountRequest {
-  account_id: string;
-  username: string;
-  email_address: string;
-  phone_number: string;
-  password: string;
+  username?: string;
+  email_address?: string;
+  phone_number?: string;
+  password?: string;
 }
 
 export class AccountResponse {

@@ -1,9 +1,9 @@
 import {
   BadRequestException,
   HttpException,
+  HttpStatus,
   Inject,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import {
   AccountResponse,
@@ -12,8 +12,7 @@ import {
   UpdateAccountRequest,
 } from 'src/model/account.model';
 import { PrismaService } from 'src/prisma.service';
-import { Account } from '@prisma/client';
-import { CreateAccountSchema, LoginAccountSchema } from './account.validation';
+import { LoginAccountSchema } from './account.validation';
 import * as bcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -33,15 +32,35 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException(
-        `Account with username ${email_address} not found`,
+      this.logger.error(`Account with email ${email_address} does not found`);
+      throw new HttpException(
+        {
+          message: `Account with email address ${email_address} not found`,
+          errors: {
+            email_address: email_address,
+            reason: 'No account associated with the provided email',
+          },
+        },
+        HttpStatus.NOT_FOUND,
       );
     }
 
     const isPasswordValid = await bcrypt.compare(password, account.password);
 
     if (!isPasswordValid) {
-      throw new HttpException('Invalid password', 401);
+      this.logger.error(
+        `Password ${password} invalid for account ${email_address}`,
+      );
+      throw new HttpException(
+        {
+          message: 'Invalid password',
+          errors: {
+            field: 'password',
+            reason: 'The provided password does not match our records',
+          },
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const accountResponse: AccountResponse = {
@@ -75,7 +94,7 @@ export class AccountService {
         errors: [
           {
             field: 'username',
-            message: 'This username is already in use',
+            reason: 'This username is already in use',
           },
         ],
       });
@@ -96,29 +115,68 @@ export class AccountService {
   }
 
   async UpdateAccount(
-    Account: Account,
+    account_id: string,
     request: UpdateAccountRequest,
   ): Promise<AccountResponse> {
-    const { username, email_address, phone_number } =
-      CreateAccountSchema.parse(request);
+    const { username, email_address, phone_number, password } = request;
 
-    if (username) {
-      Account.username = username;
+    this.logger.info(
+      `Data input for update: { 
+          username: ${username || 'N/A'}, 
+          email_address: ${email_address || 'N/A'}, 
+          phone_number: ${phone_number || 'N/A'}, 
+          password: ${password || 'N/A'} 
+        }`,
+    );
+
+    const accountExists = await this.prisma.account.findFirst({
+      where: {
+        account_id: account_id,
+      },
+    });
+
+    if (!accountExists) {
+      this.logger.error(
+        `Account with email ${email_address} does not exist`,
+        accountExists,
+      );
+      throw new HttpException(
+        {
+          message: `Account with email address ${email_address} not found`,
+          errors: {
+            email_address: email_address,
+            reason: 'No account associated with the provided email',
+          },
+        },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
-    if (email_address) {
-      Account.email_address = email_address;
+    const updateData: Partial<UpdateAccountRequest> = {};
+    for (const [key, value] of Object.entries(request)) {
+      if (typeof value === 'string') {
+        if (value.trim() !== '') {
+          updateData[key] = value;
+        }
+      } else if (value !== undefined && value !== null) {
+        updateData[key as keyof UpdateAccountRequest] = value;
+      }
     }
 
-    if (phone_number) {
-      Account.phone_number = phone_number;
-    }
+    this.logger.info(
+      `filtered data: {
+          username: ${updateData.username || 'N/A'},
+          email_address: ${updateData.email_address || 'N/A'},
+          phone_number: ${updateData.phone_number || 'N/A'},
+          password: ${updateData.password ? '******' : 'N/A'}
+        }`,
+    );
 
     const result = await this.prisma.account.update({
       where: {
-        username: Account.username,
+        account_id: account_id,
       },
-      data: Account,
+      data: updateData,
     });
 
     return {

@@ -14,11 +14,12 @@ export class TestService {
   async purgeAccount() {
     this.logger.info('Purging previous account data');
     await this.deleteAccount();
+    await this.deleteUpdatedAccount();
   }
 
   async createAccount() {
     this.logger.info('Creating test account');
-    await this.prismaService.account.create({
+    const account = await this.prismaService.account.create({
       data: {
         username: 'test',
         email_address: 'test@gmail.com',
@@ -26,6 +27,7 @@ export class TestService {
         password: await bcrypt.hash('test', 10),
       },
     });
+    return account.account_id;
   }
 
   async deleteAccount() {
@@ -33,6 +35,27 @@ export class TestService {
     const targetAccount = await this.prismaService.account.findFirst({
       where: {
         username: 'test',
+      },
+    });
+
+    if (!targetAccount) {
+      this.logger.info('No test account found to delete');
+      return;
+    }
+
+    await this.prismaService.account.delete({
+      where: {
+        account_id: targetAccount.account_id,
+      },
+    });
+    this.logger.info('Test account deleted successfully');
+  }
+
+  async deleteUpdatedAccount() {
+    this.logger.info('Deleting test account');
+    const targetAccount = await this.prismaService.account.findFirst({
+      where: {
+        username: 'test updated',
       },
     });
 
