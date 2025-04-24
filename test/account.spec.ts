@@ -8,11 +8,10 @@ import { TestModule } from './test.module';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
-describe('AppController (e2e)', () => {
+describe('AccountController (e2e)', () => {
   let app: INestApplication<App>;
   let logger: Logger;
   let testService: TestService;
-  // let prismaService: PrismaService;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

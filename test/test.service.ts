@@ -30,6 +30,43 @@ export class TestService {
     return account.account_id;
   }
 
+  async createTodo(account_id: string) {
+    this.logger.info('Creating test todo');
+    const todo = await this.prismaService.todo.create({
+      data: {
+        title: 'test todo',
+        description: 'test todo description',
+        status: false,
+        due_date: new Date(),
+        priority: 'low',
+        tags: ['test'],
+        account_id: account_id,
+      },
+    });
+    return todo.todo_id;
+  }
+
+  async deleteTodo(todo_id: string) {
+    this.logger.info('Deleting test account');
+    const targetTodo = await this.prismaService.todo.findFirst({
+      where: {
+        todo_id: todo_id,
+      },
+    });
+
+    if (!targetTodo) {
+      this.logger.info('No test todo found to delete');
+      return;
+    }
+
+    await this.prismaService.todo.delete({
+      where: {
+        todo_id: targetTodo.todo_id,
+      },
+    });
+    this.logger.info('Test todo deleted successfully');
+  }
+
   async deleteAccount() {
     this.logger.info('Deleting test account');
     const targetAccount = await this.prismaService.account.findFirst({
