@@ -5,6 +5,8 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { AccountController } from './account/account.controller';
 import { AccountService } from './account/account.service';
+import { TodoController } from './todo/todo.controller';
+import { TodoService } from './todo/todo.service';
 
 @Module({
   imports: [
@@ -33,7 +35,7 @@ import { AccountService } from './account/account.service';
       ],
     }),
   ],
-  controllers: [AccountController],
-  providers: [AppService, PrismaService, AccountService],
+  controllers: [AccountController, TodoController],
+  providers: [AppService, PrismaService, AccountService, TodoService],
 })
 export class AppModule {}

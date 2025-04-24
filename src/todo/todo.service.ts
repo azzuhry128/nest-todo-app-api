@@ -1,19 +1,10 @@
-import {
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import * as bcrypt from 'bcrypt';
 import {
   CreateTodoRequest,
-  GetTodoRequest,
   TodoResponse,
   UpdateTodoRequest,
 } from 'src/model/todo.model';
-import { LoginAccountSchema } from 'src/account/account.validation';
 import { CreateTodoSchema } from './todo.validation';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -24,22 +15,24 @@ export class TodoService {
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
   ) {}
 
-  async GetTodo(request: GetTodoRequest): Promise<TodoResponse[]> {
-    const { email_address, password } = LoginAccountSchema.parse(request);
-    const account = await this.prisma.account.findUnique({
-      where: { email_address },
+  async GetTodo(account_id: string): Promise<TodoResponse[]> {
+    const account = await this.prisma.account.findFirst({
+      where: { account_id: account_id },
     });
 
+    console.log('account from service', account);
+
     if (!account) {
-      throw new NotFoundException(
-        `Account with username ${email_address} not found`,
+      throw new HttpException(
+        {
+          message: `Account with id ${account_id} not found`,
+          errors: {
+            account_id: account_id,
+            reason: 'No account associated with the provided id',
+          },
+        },
+        HttpStatus.NOT_FOUND,
       );
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, account.password);
-
-    if (!isPasswordValid) {
-      throw new HttpException('Invalid password', 401);
     }
 
     const todos = await this.prisma.todo.findMany({

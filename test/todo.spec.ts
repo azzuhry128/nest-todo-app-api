@@ -28,6 +28,7 @@ describe('TodoController (e2e)', () => {
 
   describe('GET_TODO /api/todo/get/:account_id', () => {
     let account_id: string;
+    const fake_id = '11111111-1111-1111-1111-111111111111';
 
     beforeAll(async () => {
       const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,23 +42,32 @@ describe('TodoController (e2e)', () => {
       logger = app.get(WINSTON_MODULE_PROVIDER);
       testService = app.get(TestService);
 
+      await testService.purgeTodo();
       await testService.purgeAccount();
       account_id = await testService.createAccount();
       await testService.createTodo(account_id);
     });
-    it('should be rejected if account_id doesnt match', async () => {
-      const response = await request(app.getHttpServer()).post(
-        '/api/todo/get/11111111-1111-1111-1111-111111111111',
-      );
+
+    it('should be able to GET', async () => {
+      const response = await request(app.getHttpServer()).get(`/api/todos`);
 
       logger.info(response.body);
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
+    });
+    it('should be rejected if account_id doesnt match', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `/api/todos/get/${fake_id}`,
+      );
+
+      console.log(response.body);
+      logger.info(response.body);
+      expect(response.status).toBe(404);
       expect(response.body.errors).toBeDefined();
     });
 
     it('should be able to retrieve todos', async () => {
-      const response = await request(app.getHttpServer()).post(
-        `/api/todos/${account_id}`,
+      const response = await request(app.getHttpServer()).get(
+        `/api/todos/get/${account_id}`,
       );
       logger.info(response.body);
       expect(response.status).toBe(200);

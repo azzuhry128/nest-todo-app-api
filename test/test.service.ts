@@ -12,9 +12,14 @@ export class TestService {
   ) {}
 
   async purgeAccount() {
-    this.logger.info('Purging previous account data');
+    this.logger.warn('Purging previous account data');
     await this.deleteAccount();
     await this.deleteUpdatedAccount();
+  }
+
+  async purgeTodo() {
+    this.logger.warn('Purging previous todo data');
+    await this.deleteAllTodo();
   }
 
   async createAccount() {
@@ -46,24 +51,10 @@ export class TestService {
     return todo.todo_id;
   }
 
-  async deleteTodo(todo_id: string) {
-    this.logger.info('Deleting test account');
-    const targetTodo = await this.prismaService.todo.findFirst({
-      where: {
-        todo_id: todo_id,
-      },
-    });
+  async deleteAllTodo() {
+    this.logger.info('Deleting test todo');
+    await this.prismaService.todo.deleteMany();
 
-    if (!targetTodo) {
-      this.logger.info('No test todo found to delete');
-      return;
-    }
-
-    await this.prismaService.todo.delete({
-      where: {
-        todo_id: targetTodo.todo_id,
-      },
-    });
     this.logger.info('Test todo deleted successfully');
   }
 
