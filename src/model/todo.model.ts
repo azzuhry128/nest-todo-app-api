@@ -1,7 +1,6 @@
 export class CreateTodoRequest {
   title: string;
   description: string;
-  account_id: string;
 }
 
 export class GetTodoRequest {
@@ -9,12 +8,12 @@ export class GetTodoRequest {
 }
 
 export class UpdateTodoRequest {
-  todo_id?: string;
   title?: string;
   description?: string;
   status?: boolean;
   due_date?: string;
   priority?: string;
+  tags?: string[];
 }
 
 export class DeleteTodoRequest {

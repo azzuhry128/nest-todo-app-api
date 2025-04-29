@@ -23,7 +23,7 @@ export class TestService {
   }
 
   async createAccount() {
-    this.logger.info('Creating test account');
+    this.logger.warn('Creating test account');
     const account = await this.prismaService.account.create({
       data: {
         username: 'test',
@@ -32,11 +32,12 @@ export class TestService {
         password: await bcrypt.hash('test', 10),
       },
     });
+    this.logger.info('Test account created successfully');
     return account.account_id;
   }
 
   async createTodo(account_id: string) {
-    this.logger.info('Creating test todo');
+    this.logger.warn('Creating test todo');
     const todo = await this.prismaService.todo.create({
       data: {
         title: 'test todo',
@@ -48,6 +49,7 @@ export class TestService {
         account_id: account_id,
       },
     });
+    this.logger.info(`Test todo id: ${todo.todo_id}`);
     return todo.todo_id;
   }
 

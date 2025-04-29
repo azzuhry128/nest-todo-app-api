@@ -20,8 +20,6 @@ export class TodoService {
       where: { account_id: account_id },
     });
 
-    console.log('account from service', account);
-
     if (!account) {
       throw new HttpException(
         {
@@ -55,12 +53,17 @@ export class TodoService {
     return todoResponses;
   }
 
-  async CreateTodo(request: CreateTodoRequest): Promise<TodoResponse> {
-    const { account_id, title, description } = CreateTodoSchema.parse(request);
+  async CreateTodo(
+    account_id: string,
+    request: CreateTodoRequest,
+  ): Promise<TodoResponse> {
+    const { title, description } = CreateTodoSchema.parse(request);
+
+    this.logger.info(`parameter account_id: ${account_id}`);
 
     const existingAccount = await this.prisma.account.findFirst({
       where: {
-        account_id,
+        account_id: account_id,
       },
     });
 
@@ -78,11 +81,17 @@ export class TodoService {
       );
     }
 
+    this.logger.info(`creating todo for account_id: ${account_id}`);
+
     const todo = await this.prisma.todo.create({
       data: {
         account_id,
         title,
         description,
+        status: false,
+        due_date: new Date(Date.now()),
+        priority: 'low',
+        tags: ['test'],
       },
     });
 
@@ -127,7 +136,16 @@ export class TodoService {
       data: updateData,
     });
 
-    return updatedTodo;
+    return {
+      todo_id: updatedTodo.todo_id,
+      title: updatedTodo.title,
+      description: updatedTodo.description,
+      status: updatedTodo.status,
+      due_date: updatedTodo.due_date,
+      priority: updatedTodo.priority,
+      tags: updatedTodo.tags,
+      account_id: updatedTodo.account_id,
+    };
   }
 
   async DeleteTodo(todo_id: string): Promise<TodoResponse> {

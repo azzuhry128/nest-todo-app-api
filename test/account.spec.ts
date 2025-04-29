@@ -39,6 +39,7 @@ describe('AccountController (e2e)', () => {
       logger = app.get(WINSTON_MODULE_PROVIDER);
       testService = app.get(TestService);
 
+      await testService.purgeTodo();
       await testService.purgeAccount();
     });
     it('should be rejected if request is invalid', async () => {
@@ -144,6 +145,8 @@ describe('AccountController (e2e)', () => {
       // prismaService = app.get(PrismaService);
       logger = app.get(WINSTON_MODULE_PROVIDER);
       testService = app.get(TestService);
+
+      await testService.purgeTodo();
       await testService.purgeAccount();
       createdAccountID = await testService.createAccount();
     });
