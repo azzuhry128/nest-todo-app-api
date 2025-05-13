@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpException,
@@ -59,7 +60,7 @@ export class AccountController {
         });
       }
 
-      if (error instanceof BadRequestException) {
+      if (error instanceof HttpException) {
         throw error;
       }
 
@@ -130,6 +131,27 @@ export class AccountController {
       }
 
       throw new BadRequestException('validation failed');
+    }
+  }
+
+  @Delete('delete/:username') //  Changed the route
+  @HttpCode(200)
+  async delete(
+    @Param('username') username: string, // Get username from the body
+  ): Promise<WebResponse<void>> {
+    try {
+      //  Call the account service's delete method
+      const response = await this.accountService.deleteAccount(username);
+
+      return {
+        data: response,
+      };
+    } catch (error) {
+      //  Handle errors
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to delete account');
     }
   }
 }

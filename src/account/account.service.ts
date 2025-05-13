@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   AccountResponse,
   LoginAccountRequest,
@@ -89,15 +83,19 @@ export class AccountService {
         `Account with username ${username} already exists`,
         duplicateUsername,
       );
-      throw new BadRequestException({
-        message: `Account with username ${username} already exists`,
-        errors: [
-          {
-            field: 'username',
-            reason: 'This username is already in use',
-          },
-        ],
-      });
+
+      throw new HttpException(
+        {
+          message: `Account with username ${username} already exists`,
+          errors: [
+            {
+              field: 'username',
+              reason: 'This username is already in use',
+            },
+          ],
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const hashedPassword = await bcrypt.hash(request.password, 10);
@@ -185,5 +183,31 @@ export class AccountService {
       email_address: result.email_address,
       phone_number: result.phone_number,
     };
+  }
+
+  async deleteAccount(username: string): Promise<void> {
+    const existingAccount = await this.prisma.account.findUnique({
+      where: {
+        username: username,
+      },
+    });
+
+    if (!existingAccount) {
+      this.logger.info('No test account found to delete');
+      return;
+    }
+
+    try {
+      await this.prisma.account.delete({
+        where: {
+          username: username,
+        },
+      });
+      this.logger.info(
+        `Account with username ${username} deleted successfully`,
+      );
+    } catch (error) {
+      this.logger.error(`Error deleting account ${username}`, error);
+    }
   }
 }
